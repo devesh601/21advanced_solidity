@@ -3,49 +3,59 @@ pragma solidity ^0.5.0;
 import "./KaseiCoin.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v2.5.0/contracts/crowdsale/Crowdsale.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v2.5.0/contracts/crowdsale/emission/MintedCrowdsale.sol";
-
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v2.5.0/contracts/crowdsale/validation/CappedCrowdsale.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v2.5.0/contracts/crowdsale/validation/TimedCrowdsale.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v2.5.0/contracts/crowdsale/distribution/RefundablePostDeliveryCrowdsale.sol";
 
 // Have the KaseiCoinCrowdsale contract inherit the following OpenZeppelin:
 // * Crowdsale
 // * MintedCrowdsale
-contract KaseiCoinCrowdsale { // UPDATE THE CONTRACT SIGNATURE TO ADD INHERITANCE
+contract KaseiCoinCrowdsale is Crowdsale, MintedCrowdsale , CappedCrowdsale, TimedCrowdsale, RefundablePostDeliveryCrowdsale { // UPDATE THE CONTRACT SIGNATURE TO ADD INHERITANCE
     
-    // Provide parameters for all of the features of your crowdsale, such as the `rate`, `wallet` for fundraising, and `token`.
     constructor(
-        // YOUR CODE HERE!
-    ) public Crowdsale(rate, wallet, token) {
+        uint rate, // rate in TKN bits
+        address payable wallet, // sale beneficiary
+        KaseiCoin token, // the ArcadeToken itself that the ArcadeTokenSale will work with
+        uint goal,
+        uint open_time, 
+        uint close_time
+    )
+    
+        Crowdsale(rate, wallet, token)
+        TimedCrowdsale(open_time, close_time)
+        CappedCrowdsale(goal)
+        RefundableCrowdsale(goal)
+        public
+    {
         // constructor can stay empty
     }
 }
 
-/*
-contract KaseiCoinCrowdsaleDeployer {
-    // Create an `address public` variable called `kasei_token_address`.
-    // YOUR CODE HERE!
-    // Create an `address public` variable called `kasei_crowdsale_address`.
-    // YOUR CODE HERE!
+contract KaseiCoinSaleDeployer {
 
-    // Add the constructor.
+    address public token_sale_address;
+    address public token_address;
+    uint open_time;
+    uint close_time;
+    uint goal;
+
     constructor(
-       // YOUR CODE HERE!
-    ) public {
-        // Create a new instance of the KaseiCoin contract.
-        // YOUR CODE HERE!
-        
-        // Assign the token contract’s address to the `kasei_token_address` variable.
-        // YOUR CODE HERE!
+        string memory name,
+        string memory symbol, 
+        address payable wallet //this address will receive all Ether raised by the sale
+    )
+        public
+    {
+        // @TODO: create the KaseiCoin and keep its address handy
+        KaseiCoin token = new KaseiCoin(name, symbol, 0);
+        token_address = address(token);
 
-        // Create a new instance of the `KaseiCoinCrowdsale` contract
-        // YOUR CODE HERE!
-            
-        // Aassign the `KaseiCoinCrowdsale` contract’s address to the `kasei_crowdsale_address` variable.
-        // YOUR CODE HERE!
+        // @TODO: create the KaseiCoinSale and tell it about the token, set the goal, and set the open and close times to now and now + 24 weeks.
+        KaseiCoinSale token_sale = new KaseiCoinSale (1, wallet, token, now, now + 24 weeks, 100);
+        token_sale_address = address (token_sale);
 
-        // Set the `KaseiCoinCrowdsale` contract as a minter
-        // YOUR CODE HERE!
-        
-        // Have the `KaseiCoinCrowdsaleDeployer` renounce its minter role.
-        // YOUR CODE HERE!
+        // make the KaseiCoinSale contract a minter, then have the KaseiCoinSaleDeployer renounce its minter role
+        token.addMinter(token_sale_address);
+        token.renounceMinter();
     }
 }
-*/
